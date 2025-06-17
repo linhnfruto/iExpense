@@ -63,53 +63,56 @@ extension View {
 
 struct ContentView: View {
     @Environment(\.modelContext) var modelContext
-    @Query() var expenses: [ExpenseItem]
+    @State private var filterType = ["Personal", "Business"]
+    @State private var sortOrder = [
+        SortDescriptor(\ExpenseItem.name),
+        SortDescriptor(\ExpenseItem.amount)
+    ]
     
     @State private var showingAddExpense = false
     
     var body: some View {
         NavigationStack {
-            List {
-                let typeList = getTypeList()
-                
-                ForEach(typeList, id: \.self) { type in
-                    Section(type) {
-                        ForEach(expenses) { item in
-                            if item.type == type {
-                                HStack {
-                                    VStack(alignment: .leading) {
-                                        Text(item.name)
-                                            .font(.headline)
-                                    }
-                                    Spacer()
-                                    StyledAmount(amount: item.amount)
-                                }
-                            }
-                        }
-                        .onDelete(perform: removeItems)
-                    }
-                }
-            }
+            ExpensesView(filterType: filterType, sortOrder: sortOrder)
             .navigationTitle("iExpense")
             .toolbar {
                 NavigationLink("Add Expense") {
                     AddView()
                 }
+                
+                Menu("Sort", systemImage: "line.3.horizontal.decrease.circle") {
+                    Picker("Filter", selection: $filterType) {
+                        Text("All")
+                            .tag(["Personal", "Business"])
+                        
+                        Text("Personal")
+                            .tag(["Personal"])
+                        
+                        Text("Business")
+                            .tag(["Business"])
+                    }
+                }
+                
+                Menu("Sort", systemImage: "arrow.up.arrow.down") {
+                    Picker("Sort", selection: $sortOrder) {
+                        Text("Sort by Name")
+                            .tag([
+                                SortDescriptor(\ExpenseItem.name),
+                                SortDescriptor(\ExpenseItem.amount)
+                            ])
+                        
+                        Text("Sort by Amount")
+                            .tag([
+                                SortDescriptor(\ExpenseItem.amount),
+                                SortDescriptor(\ExpenseItem.name)
+                            ])
+                    }
+                }
             }
         }
     }
     
-    func removeItems(at offsets: IndexSet) {
-        for offset in offsets {
-            let expenseItem = expenses[offset]
-            modelContext.delete(expenseItem)
-        }
-    }
     
-    func getTypeList() -> [String] {
-        Array(Set(expenses.map(\.type))).sorted()
-        
-    }
 }
 
 #Preview {
